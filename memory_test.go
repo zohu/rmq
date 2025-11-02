@@ -15,7 +15,7 @@ func TestMemory(t *testing.T) {
 
 		assert.NotNil(t, m)
 		assert.NotNil(t, m.cache)
-		assert.Equal(t, Prefix(""), m.prefix)
+		assert.Equal(t, Prefix("rmq"), m.prefix)
 	})
 
 	t.Run("NewMemory with prefix", func(t *testing.T) {

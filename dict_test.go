@@ -10,11 +10,14 @@ import (
 )
 
 func init() {
-	InitRedis(WithRedisOptions(&redis.UniversalOptions{
-		Addrs:      []string{"localhost:8011"},
-		Password:   "JCFkQYex4f",
-		ClientName: "rmq",
-	}))
+	InitRedis(
+		WithRedisPrefix("test"),
+		WithRedisOptions(&redis.UniversalOptions{
+			Addrs:      []string{"localhost:8011"},
+			Password:   "JCFkQYex4f",
+			ClientName: "rmq",
+		}),
+	)
 	InitMemory(WithMemoryPrefix("test"))
 	InitCache(Mem(), Rds())
 }
