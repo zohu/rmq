@@ -33,7 +33,6 @@ func (m *Monitor) GetProcessingCount() (int64, error) {
 }
 func (m *Monitor) ListenEvent(listener EventListener) (func(), error) {
 	ctx := context.Background()
-	rds := Rds()
 	sub := rds.Subscribe(ctx, m.inner.reportKey)
 	cls := func() {
 		_ = sub.Close()

@@ -12,14 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func init() {
-	InitRedis(WithRedisOptions(&redis.UniversalOptions{
-		Addrs:      []string{"localhost:8011"},
-		Password:   "JCFkQYex4f",
-		ClientName: "rmq",
-	}))
-}
-
 func TestDelayQueue_FullLifecycle(t *testing.T) {
 	if Rds() == nil {
 		t.Skip("Redis not initialized")
@@ -29,7 +21,6 @@ func TestDelayQueue_FullLifecycle(t *testing.T) {
 
 	queueName := Topic("test_queue_" + time.Now().Format("20060102150405"))
 	q := NewQueue(queueName,
-		WithQueuePrefix("test"),
 		WithQueueConcurrent(1),
 		WithQueueFetchLimit(10),
 		WithQueueFetchInterval(1*time.Second),
@@ -256,7 +247,6 @@ func TestDelayQueue_UpdateZSetScore(t *testing.T) {
 	q := NewQueue(Topic(queueName))
 
 	ctx := context.Background()
-	rds := Rds()
 	key := q.prefix + ":test_zset"
 	member := "test_member"
 

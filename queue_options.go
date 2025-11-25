@@ -6,7 +6,6 @@ import (
 )
 
 type queueOptions struct {
-	prefix              Prefix
 	hashTag             *bool
 	fetchLimit          uint
 	fetchInterval       time.Duration
@@ -34,19 +33,11 @@ func (o *queueOptions) validate() error {
 	if o.ttl <= 0 {
 		o.ttl = time.Hour * 24 * 30
 	}
-	if o.prefix == "" {
-		o.prefix = "rmq"
-	}
 	return nil
 }
 
 type QueueOption func(*queueOptions)
 
-func WithQueuePrefix(prefix string) QueueOption {
-	return func(o *queueOptions) {
-		o.prefix = Prefix(prefix)
-	}
-}
 func WithQueueConcurrent(concurrent uint) QueueOption {
 	return func(o *queueOptions) {
 		o.concurrent = concurrent

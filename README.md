@@ -22,9 +22,7 @@ go get -u github.com/zohu/rmq
 // mem := rmq.NewMemory(opts ...MemoryOption) *Memory
 
 // 如果仅使用全局单例，可以先全局初始化，然后直接使用
-rmq.InitMemory(
-    WithMemoryPrefix("rmq"),  // 全局前缀，对业务透明, 默认为rmq
-)
+rmq.InitMemory()
 rmq.Memory().Set("test", "hello world")
 rmq.Memory().Get("test")
 rmq.Memory().Delete("test")

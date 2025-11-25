@@ -9,19 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func init() {
-	InitRedis(
-		WithRedisPrefix("test"),
-		WithRedisOptions(&redis.UniversalOptions{
-			Addrs:      []string{"localhost:8011"},
-			Password:   "JCFkQYex4f",
-			ClientName: "rmq",
-		}),
-	)
-	InitMemory(WithMemoryPrefix("test"))
-	InitCache(Mem(), Rds())
-}
-
 func TestCache_Set(t *testing.T) {
 	ctx := context.Background()
 	key := "test-key"

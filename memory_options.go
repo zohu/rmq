@@ -9,7 +9,6 @@ import (
 )
 
 type memoryOptions struct {
-	prefix  Prefix
 	options *bigcache.Config
 }
 
@@ -35,9 +34,6 @@ func (o *memoryOptions) validate() error {
 	if o.options.CleanWindow <= 0 {
 		o.options.CleanWindow = time.Duration(math.Min(float64(o.options.LifeWindow/2), float64(time.Minute)))
 	}
-	if o.prefix == "" {
-		o.prefix = "rmq"
-	}
 	return nil
 }
 
@@ -46,10 +42,5 @@ type MemoryOption func(*memoryOptions)
 func WithMemoryOptions(options *bigcache.Config) MemoryOption {
 	return func(o *memoryOptions) {
 		o.options = options
-	}
-}
-func WithMemoryPrefix(prefix Prefix) MemoryOption {
-	return func(o *memoryOptions) {
-		o.prefix = prefix
 	}
 }

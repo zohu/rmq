@@ -18,7 +18,7 @@ func init() {
 			ClientName: "rmq",
 		}),
 	)
-	InitMemory(WithMemoryPrefix("test"))
+	InitMemory()
 	InitCache(Mem(), Rds())
 }
 

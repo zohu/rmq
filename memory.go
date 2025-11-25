@@ -2,7 +2,6 @@ package rmq
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	"github.com/allegro/bigcache/v3"
@@ -11,9 +10,8 @@ import (
 )
 
 type Memory struct {
-	prefix Prefix
-	life   time.Duration
-	cache  *bigcache.BigCache
+	life  time.Duration
+	cache *bigcache.BigCache
 }
 
 func NewMemory(opts ...MemoryOption) *Memory {
@@ -29,9 +27,8 @@ func NewMemory(opts ...MemoryOption) *Memory {
 		zlog.Panic("rmq: memory options error", "err", err)
 	}
 	return &Memory{
-		prefix: option.prefix,
-		life:   option.options.LifeWindow,
-		cache:  c,
+		life:  option.options.LifeWindow,
+		cache: c,
 	}
 }
 
@@ -44,10 +41,10 @@ func (m *Memory) Set(key string, value string, ttl ...time.Duration) {
 	ttl = append(ttl, m.life)
 	expire := time.Now().Add(ttl[0]).UnixNano()
 	data, _ := sonic.Marshal(MemEntry{Expire: expire, Value: value})
-	_ = m.cache.Set(m.appendPrefix(key), data)
+	_ = m.cache.Set(key, data)
 }
 func (m *Memory) Get(key string) (string, bool) {
-	d, err := m.cache.Get(m.appendPrefix(key))
+	d, err := m.cache.Get(key)
 	if err != nil {
 		return "", false
 	}
@@ -56,13 +53,13 @@ func (m *Memory) Get(key string) (string, bool) {
 		return "", false
 	}
 	if obj.Expire < time.Now().UnixNano() {
-		_ = m.cache.Delete(m.appendPrefix(key))
+		_ = m.cache.Delete(key)
 		return "", false
 	}
 	return obj.Value, true
 }
 func (m *Memory) Delete(key string) {
-	_ = m.cache.Delete(m.appendPrefix(key))
+	_ = m.cache.Delete(key)
 }
 func (m *Memory) Close() error {
 	return m.cache.Close()
@@ -88,24 +85,12 @@ func (m *Memory) Range(fn func(key string, value string)) {
 			_ = m.cache.Delete(v.Key())
 			continue
 		}
-		fn(m.removePrefix(v.Key()), obj.Value)
+		fn(v.Key(), obj.Value)
 	}
 }
 func (m *Memory) Stats() bigcache.Stats {
 	return m.cache.Stats()
 }
 func (m *Memory) KeyMetadata(key string) bigcache.Metadata {
-	return m.cache.KeyMetadata(m.appendPrefix(key))
-}
-func (m *Memory) appendPrefix(k string) string {
-	if m.prefix == "" || strings.HasPrefix(k, m.prefix.String()+":") {
-		return k
-	}
-	return m.prefix.String(k)
-}
-func (m *Memory) removePrefix(k string) string {
-	if m.prefix == "" || !strings.HasPrefix(k, m.prefix.String()+":") {
-		return k
-	}
-	return k[len(m.prefix+":"):]
+	return m.cache.KeyMetadata(key)
 }

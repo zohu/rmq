@@ -123,7 +123,7 @@ type EventListener interface {
 var queueOpts = make(map[Topic][]QueueOption)
 
 func NewQueue(topic Topic, opts ...QueueOption) *DelayQueue {
-	if Rds() == nil {
+	if rds == nil {
 		zlog.Panic("rmq: redis not initialized")
 	}
 	option := &queueOptions{}
@@ -134,10 +134,7 @@ func NewQueue(topic Topic, opts ...QueueOption) *DelayQueue {
 		zlog.Panic("rmq: queue options error", err)
 	}
 	prefix := "queue:" + topic.String()
-	if option.prefix != "" {
-		prefix = option.prefix.String(prefix)
-	}
-	if *option.hashTag == true {
+	if *option.hashTag {
 		prefix = "{" + prefix + "}"
 	}
 	queueOpts[topic] = opts
@@ -151,7 +148,6 @@ func NewQueue(topic Topic, opts ...QueueOption) *DelayQueue {
 		retryCountKey:       prefix + ":retry:cnt",
 		garbageKey:          prefix + ":garbage",
 		reportKey:           prefix + ":report",
-		useHashTag:          *option.hashTag,
 		fetchLimit:          option.fetchLimit,
 		fetchInterval:       option.fetchInterval,
 		maxConsumeDuration:  option.maxConsumeDuration,
@@ -165,7 +161,6 @@ func NewQueue(topic Topic, opts ...QueueOption) *DelayQueue {
 }
 func (q *DelayQueue) SendScheduleMsg(payload string, t time.Time) (string, error) {
 	ctx := context.Background()
-	rds := Rds()
 	id := zid.NextString()
 	msgTTL := t.Sub(time.Now()) + q.msgTTL
 	err := rds.Set(ctx, q.genMsgKey(id), payload, msgTTL).Err()
@@ -194,7 +189,6 @@ type InterceptResult struct {
 
 func (q *DelayQueue) TryIntercept(id string) (*InterceptResult, error) {
 	ctx := context.Background()
-	rds := Rds()
 	removed, err := rds.LRem(ctx, q.readyKey, 0, id).Result()
 	if err != nil {
 		zlog.Warnf("intercept %s from ready failed: %v", id, err)
@@ -272,17 +266,14 @@ func (q *DelayQueue) Stop() {
 }
 func (q *DelayQueue) GetPendingCount() (int64, error) {
 	ctx := context.Background()
-	rds := Rds()
 	return rds.ZCard(ctx, q.pendingKey).Result()
 }
 func (q *DelayQueue) GetReadyCount() (int64, error) {
 	ctx := context.Background()
-	rds := Rds()
 	return rds.LLen(ctx, q.readyKey).Result()
 }
 func (q *DelayQueue) GetProcessingCount() (int64, error) {
 	ctx := context.Background()
-	rds := Rds()
 	return rds.ZCard(ctx, q.unAckKey).Result()
 }
 func (q *DelayQueue) ListenEvent(listener EventListener) {
@@ -300,7 +291,6 @@ func (q *DelayQueue) DisableReport() {
 
 func (q *DelayQueue) loadScript(script string) (string, error) {
 	ctx := context.Background()
-	rds := Rds()
 	sha1, err := rds.ScriptLoad(ctx, script).Result()
 	if err != nil {
 		return "", err
@@ -312,7 +302,6 @@ func (q *DelayQueue) loadScript(script string) (string, error) {
 }
 func (q *DelayQueue) eval(script string, keys []string, args []interface{}) (interface{}, error) {
 	ctx := context.Background()
-	rds := Rds()
 	var err error
 	q.sha1mapMu.RLock()
 	sha1, ok := q.sha1map[script]
@@ -420,7 +409,6 @@ func (q *DelayQueue) retry2Unack() (string, error) {
 }
 func (q *DelayQueue) callback(id string, cb func(payload string) bool) error {
 	ctx := context.Background()
-	rds := Rds()
 	payload, err := rds.Get(ctx, q.genMsgKey(id)).Result()
 	if errors.Is(err, redis.Nil) {
 		return nil
@@ -438,7 +426,6 @@ func (q *DelayQueue) callback(id string, cb func(payload string) bool) error {
 }
 func (q *DelayQueue) ack(id string) error {
 	ctx := context.Background()
-	rds := Rds()
 	atomic.AddInt32(&q.fetchCount, -1)
 	_, err := rds.ZRem(ctx, q.unAckKey, id).Result()
 	if err != nil {
@@ -475,7 +462,6 @@ func (q *DelayQueue) nack(id string) error {
 	atomic.AddInt32(&q.fetchCount, -1)
 
 	ctx := context.Background()
-	rds := Rds()
 
 	// 检查是否还有重试次数（只读，不修改）
 	retryStr, err := rds.HGet(ctx, q.retryCountKey, id).Result()
@@ -581,7 +567,6 @@ func (q *DelayQueue) unack2Retry() error {
 }
 func (q *DelayQueue) garbageCollect() error {
 	ctx := context.Background()
-	rds := Rds()
 	msgIds, err := rds.SMembers(ctx, q.garbageKey).Result()
 	if err != nil {
 		return fmt.Errorf("smembers failed: %v", err)
@@ -689,7 +674,6 @@ type pubSubListener struct {
 
 func (l *pubSubListener) OnEvent(event *Event) {
 	ctx := context.Background()
-	rds := Rds()
 	payload := encodeEvent(event)
 	rds.Publish(ctx, l.reportChan, payload)
 }

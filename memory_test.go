@@ -15,14 +15,6 @@ func TestMemory(t *testing.T) {
 
 		assert.NotNil(t, m)
 		assert.NotNil(t, m.cache)
-		assert.Equal(t, Prefix("rmq"), m.prefix)
-	})
-
-	t.Run("NewMemory with prefix", func(t *testing.T) {
-		m := NewMemory(WithMemoryPrefix("test"))
-		defer m.Close()
-
-		assert.Equal(t, Prefix("test"), m.prefix)
 	})
 
 	t.Run("Set and Get", func(t *testing.T) {
@@ -81,7 +73,7 @@ func TestMemory(t *testing.T) {
 	})
 
 	t.Run("Range", func(t *testing.T) {
-		m := NewMemory(WithMemoryPrefix("p"))
+		m := NewMemory()
 		defer m.Close()
 
 		m.Set("a", "1")
@@ -110,20 +102,6 @@ func TestMemory(t *testing.T) {
 		m.Set("metaKey", "metaVal")
 		meta := m.KeyMetadata("metaKey")
 		assert.NotNil(t, meta)
-	})
-
-	t.Run("appendPrefix and removePrefix", func(t *testing.T) {
-		m := &Memory{prefix: "pre"}
-
-		keyWithPrefix := m.appendPrefix("key")
-		assert.Equal(t, "pre:key", keyWithPrefix)
-
-		originalKey := m.removePrefix(keyWithPrefix)
-		assert.Equal(t, "key", originalKey)
-
-		mNoPrefix := &Memory{prefix: ""}
-		assert.Equal(t, "key", mNoPrefix.appendPrefix("key"))
-		assert.Equal(t, "key", mNoPrefix.removePrefix("key"))
 	})
 
 	t.Run("ttl", func(t *testing.T) {

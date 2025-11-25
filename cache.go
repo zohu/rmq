@@ -3,8 +3,6 @@ package rmq
 import (
 	"context"
 	"time"
-
-	"github.com/zohu/zlog"
 )
 
 type Cache struct {
@@ -13,9 +11,6 @@ type Cache struct {
 }
 
 func NewCache(m *Memory, r *Redis) *Cache {
-	if m.prefix != r.prefix {
-		zlog.Panic("rmq: memory and redis prefix not match")
-	}
 	return &Cache{
 		mem: m,
 		rds: r,
